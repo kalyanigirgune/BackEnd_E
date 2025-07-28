@@ -8,9 +8,14 @@ const app = express();
 
 // CORS configuration for production
 app.use(cors({
-  origin: true, // Allow all origins for now
+  origin: ['https://front-end-e.vercel.app', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use(express.json());
 
@@ -35,6 +40,15 @@ app.get('/test-api-key', (req, res) => {
   });
 });
 
+// Test endpoint for debugging
+app.post('/test', (req, res) => {
+  res.json({ 
+    message: 'POST request received',
+    body: req.body,
+    headers: req.headers
+  });
+});
+
 app.use("/api/emails", emailRoutes);
 
 // Handle root route
@@ -44,6 +58,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: 'GET /health',
       testKey: 'GET /test-api-key',
+      test: 'POST /test',
       single: 'POST /api/emails/validate',
       bulk: 'POST /api/emails/bulk-validate'
     }
