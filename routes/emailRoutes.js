@@ -2,16 +2,28 @@ const express = require("express");
 const axios = require("axios");
 const router = express.Router();
 
-const ABSTRACT_API_KEY = process.env.ABSTRACT_API_KEY || "71b8f2362c2d4095b11314e5d2c0af8e";
+const ABSTRACT_API_KEY = process.env.ABSTRACT_API_KEY;
 
 router.post("/validate", async (req, res) => {
   const { email } = req.body;
 
   if (!email) return res.status(400).json({ message: "Email is required." });
 
+  // Debug logging
+  console.log('Environment check:', {
+    NODE_ENV: process.env.NODE_ENV,
+    ABSTRACT_API_KEY: ABSTRACT_API_KEY ? 'SET' : 'NOT SET',
+    email: email
+  });
+
   if (!ABSTRACT_API_KEY || ABSTRACT_API_KEY === 'test_key') {
+    console.error('API Key Error:', { ABSTRACT_API_KEY: ABSTRACT_API_KEY });
     return res.status(400).json({ 
-      message: "Abstract API key is required. Please set ABSTRACT_API_KEY in your .env file." 
+      message: "Abstract API key is required. Please set ABSTRACT_API_KEY in your environment variables.",
+      debug: {
+        hasKey: !!ABSTRACT_API_KEY,
+        keyLength: ABSTRACT_API_KEY ? ABSTRACT_API_KEY.length : 0
+      }
     });
   }
 
@@ -35,10 +47,19 @@ router.post("/validate", async (req, res) => {
     
     res.json(result);
   } catch (error) {
-    console.error("Abstract API Error:", error.response?.data || error.message);
+    console.error("Abstract API Error:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
     res.status(500).json({ 
       message: "Error validating email", 
-      error: error.response?.data?.message || error.message 
+      error: error.response?.data?.message || error.message,
+      debug: {
+        status: error.response?.status,
+        data: error.response?.data
+      }
     });
   }
 });
@@ -50,9 +71,21 @@ router.post("/bulk-validate", async (req, res) => {
     return res.status(400).json({ message: "emails must be an array." });
   }
 
+  // Debug logging
+  console.log('Bulk validation environment check:', {
+    NODE_ENV: process.env.NODE_ENV,
+    ABSTRACT_API_KEY: ABSTRACT_API_KEY ? 'SET' : 'NOT SET',
+    emailCount: emails.length
+  });
+
   if (!ABSTRACT_API_KEY || ABSTRACT_API_KEY === 'test_key') {
+    console.error('Bulk API Key Error:', { ABSTRACT_API_KEY: ABSTRACT_API_KEY });
     return res.status(400).json({ 
-      message: "Abstract API key is required. Please set ABSTRACT_API_KEY in your .env file." 
+      message: "Abstract API key is required. Please set ABSTRACT_API_KEY in your environment variables.",
+      debug: {
+        hasKey: !!ABSTRACT_API_KEY,
+        keyLength: ABSTRACT_API_KEY ? ABSTRACT_API_KEY.length : 0
+      }
     });
   }
 
@@ -75,7 +108,11 @@ router.post("/bulk-validate", async (req, res) => {
             is_verified: isVerified
           };
         } catch (error) {
-          console.error(`Error validating ${email}:`, error.response?.data || error.message);
+          console.error(`Error validating ${email}:`, {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+          });
           return {
             email: email,
             is_verified: false,
